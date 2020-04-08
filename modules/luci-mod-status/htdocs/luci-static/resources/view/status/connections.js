@@ -31,6 +31,26 @@ var graphPolls = [],
 
 var recheck_lookup_queue = {};
 
+function decodeMarkValue(mark) {
+	var connstatetable = [ "00", "01", "10", "11" ];
+	var dscptable = [	"CS0", "LE", "TOS2", "TOS3", "TOS4", "TOS5", "TOS6", "TOS7",/* 0-7 */
+				"CS1", "?", "AF11", "?", "AF12", "?", "AF13", "?",	/* 8-15 */
+				"CS2", "?", "AF21", "?", "AF22", "?", "AF23", "?",	/* 16-23 */
+				"CS3", "?", "AF31", "?", "AF32", "?", "AF33", "?",	/* 24-31 */
+				"CS4", "?", "AF41", "?", "AF42", "?", "AF43", "?",	/* 32-39 */
+				"CS5", "?", "?", "?", "VA", "", "EF", "?",	/* 40-47 */
+				"CS6", "?", "?", "?", "?", "?", "?", "?",	/* 48-55 */
+				"CS7", "?", "?", "?", "?", "?", "?", "?" ];	/* 56-63 */
+	var dscp;
+	var dscps;
+	var state;
+
+	dscp = (mark&0x3f);
+	dscps = dscptable[dscp];
+	state = connstatetable[(mark >>> 6)&0x3];
+	return ('%02d-%s-%s'.format(dscp, dscps, state));
+}
+
 Math.log2 = Math.log2 || function(x) { return Math.log(x) * Math.LOG2E; };
 
 return view.extend({
@@ -135,7 +155,8 @@ return view.extend({
 				c.layer4.toUpperCase(),
 				'%h'.format(c.hasOwnProperty('sport') ? (src + ':' + c.sport) : src),
 				'%h'.format(c.hasOwnProperty('dport') ? (dst + ':' + c.dport) : dst),
-				'%1024.2mB (%d %s)'.format(c.bytes, c.packets, _('Pkts.'))
+				'%1024.2mB (%d %s)'.format(c.bytes, c.packets, _('Pkts.')),
+				decodeMarkValue(c.mark)
 			]);
 		}
 
@@ -384,7 +405,8 @@ return view.extend({
 						E('th', { 'class': 'th col-2' }, [ _('Protocol') ]),
 						E('th', { 'class': 'th col-7' }, [ _('Source') ]),
 						E('th', { 'class': 'th col-7' }, [ _('Destination') ]),
-						E('th', { 'class': 'th col-4' }, [ _('Transfer') ])
+						E('th', { 'class': 'th col-4' }, [ _('Transfer') ]),
+						E('th', { 'class': 'th col-2' }, [ _('DSCPMark') ])
 					]),
 					E('tr', { 'class': 'tr placeholder' }, [
 						E('td', { 'class': 'td' }, [
