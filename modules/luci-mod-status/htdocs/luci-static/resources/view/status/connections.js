@@ -31,6 +31,34 @@ var graphPolls = [],
 
 var recheck_lookup_queue = {};
 
+var dscptable = [	"CS0", "LE", "TOS2", "TOS3", "TOS4", "TOS5", "TOS6", "TOS7",/* 0-7 */
+			"CS1", "", "AF11", "", "AF12", "", "AF13", "",	/* 8-15 */
+			"CS2", "", "AF21", "", "AF22", "", "AF23", "",	/* 16-23 */
+			"CS3", "", "AF31", "", "AF32", "", "AF33", "",	/* 24-31 */
+			"CS4", "", "AF41", "", "AF42", "", "AF43", "",	/* 32-39 */
+			"CS5", "", "", "", "VA", "", "EF", "",	/* 40-47 */
+			"CS6", "", "", "", "", "", "", "",	/* 48-55 */
+			"CS7", "", "", "", "", "", "", ""	/* 56-63 */
+];
+
+function decodeMarkValue(mark) {
+	var rtn = "";
+	var dscp;
+
+	if ((mark >>> 25)& 1 == 1) {
+		if ((mark >>> 24)& 1 == 1)
+			rtn="F-";
+		else
+			rtn="D-";
+		dscp = dscptable[mark >>> 26];
+		if (dscp != "")
+			rtn = rtn + dscp;
+		else
+			rtn = rtn + (mark >>> 26);
+	}
+	return rtn;
+}
+
 Math.log2 = Math.log2 || function(x) { return Math.log(x) * Math.LOG2E; };
 
 return view.extend({
@@ -135,7 +163,8 @@ return view.extend({
 				c.layer4.toUpperCase(),
 				c.hasOwnProperty('sport') ? (src + ':' + c.sport) : src,
 				c.hasOwnProperty('dport') ? (dst + ':' + c.dport) : dst,
-				'%1024.2mB (%d %s)'.format(c.bytes, c.packets, _('Pkts.'))
+				'%1024.2mB (%d %s)'.format(c.bytes, c.packets, _('Pkts.')),
+				decodeMarkValue(c.mark)
 			]);
 		}
 
@@ -377,12 +406,13 @@ return view.extend({
 
 			E('div', { 'class': 'cbi-section-node' }, [
 				E('table', { 'class': 'table', 'id': 'connections' }, [
-					E('tr', { 'class': 'tr table-titles' }, [
-						E('th', { 'class': 'th col-2 hide-xs' }, [ _('Network') ]),
-						E('th', { 'class': 'th col-2' }, [ _('Protocol') ]),
-						E('th', { 'class': 'th col-7' }, [ _('Source') ]),
-						E('th', { 'class': 'th col-7' }, [ _('Destination') ]),
-						E('th', { 'class': 'th col-4' }, [ _('Transfer') ])
+					E('div', { 'class': 'tr table-titles' }, [
+						E('div', { 'class': 'th col-2 hide-xs' }, [ _('Network') ]),
+						E('div', { 'class': 'th col-2' }, [ _('Protocol') ]),
+						E('div', { 'class': 'th col-7' }, [ _('Source') ]),
+						E('div', { 'class': 'th col-7' }, [ _('Destination') ]),
+						E('div', { 'class': 'th col-4' }, [ _('Transfer') ]),
+						E('div', { 'class': 'th col-2' }, [ _('DSCPMark') ])
 					]),
 					E('tr', { 'class': 'tr placeholder' }, [
 						E('td', { 'class': 'td' }, [
