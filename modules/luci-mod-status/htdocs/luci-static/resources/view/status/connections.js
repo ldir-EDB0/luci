@@ -41,15 +41,14 @@ var dscptable = [	"CS0", "LE", "TOS2", "TOS3", "TOS4", "TOS5", "TOS6", "TOS7",/*
 			"CS7", "", "", "", "", "", "", ""	/* 56-63 */
 ];
 
+var connstatetable = [	"D-", "N-", "F-", "FN-" ];
+
 function decodeMarkValue(mark) {
 	var rtn = "";
 	var dscp;
 
 	if ((mark >>> 25)& 1 == 1) {
-		if ((mark >>> 24)& 1 == 1)
-			rtn="F-";
-		else
-			rtn="D-";
+		rtn = connstatetable[(mark >>> 23)& 3];
 		dscp = dscptable[mark >>> 26];
 		if (dscp != "")
 			rtn = rtn + dscp;
