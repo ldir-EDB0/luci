@@ -5,6 +5,34 @@
 'require rpc';
 'require fs';
 
+const CONN_STATE = ["00", "01", "10", "11"];
+
+const DSCP = {
+  0: "CS0",
+  1: "LE",
+  8: "CS1",
+  10: "AF11",
+  12: "AF12",
+  14: "AF13",
+  16: "CS2",
+  18: "AF21",
+  20: "AF22",
+  22: "AF23",
+  24: "CS3",
+  26: "AF31",
+  28: "AF32",
+  30: "AF33",
+  32: "CS4",
+  34: "AF41",
+  36: "AF42",
+  38: "AF43",
+  40: "CS5",
+  44: "VA",
+  46: "EF",
+  48: "CS6",
+  56: "CS7"
+};
+
 const callLuciRealtimeStats = rpc.declare({
 	object: 'luci',
 	method: 'getRealtimeStats',
@@ -160,6 +188,13 @@ return view.extend({
 					return `${address}:${port}`;
 			}
 
+			function decodeMarkValue(mark) {
+				const dscp = mark & 0x3F;
+				const state = (mark >>> 6) & 0x03;
+
+				return `${String(dscp).padStart(2,'0')}-${DSCP[dscp] ?? "?"}-${CONN_STATE[state] ?? "??"}`;
+			}
+
 			await fetchServices();
 
 			const lookup_queue = new Set();
@@ -184,6 +219,7 @@ return view.extend({
 					const source = '%h'.format(joinAddressWithPortOrServiceName(src, c.sport, protocol));
 					const destination = '%h'.format(joinAddressWithPortOrServiceName(dst, c.dport, protocol));
 					const transfer = [c.bytes, '%1024.2mB (%d %s)'.format(c.bytes, c.packets, _('Pkts.'))];
+					const mark = decodeMarkValue(c.mark);
 
 					if (filterText) {
 							const filterTextExpressions = filterText.split(' ');
@@ -194,7 +230,7 @@ return view.extend({
 							}
 					}
 
-					rows.push([network, protocol, source, destination, transfer]);
+					rows.push([network, protocol, source, destination, transfer, mark]);
 			}
 
 			cbi_update_table('#connections', rows, E('em', _('No information available')));
@@ -511,7 +547,8 @@ return view.extend({
 							E('th', { 'class': 'th col-2' }, [ _('Protocol') ]),
 							E('th', { 'class': 'th col-7' }, [ _('Source') ]),
 							E('th', { 'class': 'th col-7' }, [ _('Destination') ]),
-							E('th', { 'class': 'th col-4' }, [ _('Transfer') ])
+							E('th', { 'class': 'th col-4' }, [ _('Transfer') ]),
+							E('th', { 'class': 'th col-2' }, [ _('DSCPMark') ])
 						]),
 						E('tr', { 'class': 'tr placeholder' }, [
 							E('td', { 'class': 'td' }, [
